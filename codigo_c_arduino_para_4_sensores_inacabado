@@ -86,7 +86,7 @@ void loop() {
   }
 
   // Controle de movimento baseado nos sensores
-  if (sensorValueA2 >= treashold && sensorValueA3 >= treashold) {
+  if (sensorValueA2 >= treashold || sensorValueA3 >= treashold) {
     // Se os sensores centrais detectarem a linha preta, o robô segue em frente
     analogWrite(motorREnable, 128);
     analogWrite(motorLEnable, 128);
