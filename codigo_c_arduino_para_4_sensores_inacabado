@@ -1,0 +1,120 @@
+// Definição dos pinos dos motores
+const int motorRPin1 = 8;
+const int motorRPin2 = 9;
+const int motorREnable = 10;
+
+const int motorLPin1 = 12;
+const int motorLPin2 = 13;
+const int motorLEnable = 11;
+
+// Definição dos pinos dos sensores (A0 a A5)
+const int sensorA0 = A0;
+const int sensorA1 = A1;
+const int sensorA2 = A2;
+const int sensorA3 = A3;
+const int sensorA4 = A4;
+const int sensorA5 = A5;
+
+// Valor de threshold para detecção da linha preta
+int treashold = 505;
+
+void setup() {
+  // Configuração dos pinos dos motores
+  pinMode(motorLPin1, OUTPUT);
+  pinMode(motorLPin2, OUTPUT);
+  pinMode(motorLEnable, OUTPUT);
+  pinMode(motorRPin1, OUTPUT);
+  pinMode(motorRPin2, OUTPUT);
+  pinMode(motorREnable, OUTPUT);
+
+  // Configuração dos pinos dos sensores
+  pinMode(sensorA0, INPUT_PULLUP);
+  pinMode(sensorA1, INPUT_PULLUP);
+  pinMode(sensorA2, INPUT_PULLUP);
+  pinMode(sensorA3, INPUT_PULLUP);
+  pinMode(sensorA4, INPUT_PULLUP);
+  pinMode(sensorA5, INPUT_PULLUP);
+
+  // Inicializa a comunicação serial
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Leitura dos sensores (A0 a A5)
+  int sensorValueA0 = analogRead(sensorA0);
+  int sensorValueA1 = analogRead(sensorA1);
+  int sensorValueA2 = analogRead(sensorA2);
+  int sensorValueA3 = analogRead(sensorA3);
+  int sensorValueA4 = analogRead(sensorA4);
+  int sensorValueA5 = analogRead(sensorA5);
+
+  // Verificação e impressão dos valores de todos os sensores
+  if (sensorValueA0 >= treashold) {
+    Serial.println("Sensor A0 detectou linha preta");
+  } else {
+    Serial.println("Sensor A0 detectou a linha branca");
+  }
+
+  if (sensorValueA1 >= treashold) {
+    Serial.println("Sensor A1 detectou linha preta");
+  } else {
+    Serial.println("Sensor A1 detectou a linha branca");
+  }
+
+  if (sensorValueA2 >= treashold) {
+    Serial.println("Sensor A2 detectou linha preta");
+  } else {
+    Serial.println("Sensor A2 detectou a linha branca");
+  }
+
+  if (sensorValueA3 >= treashold) {
+    Serial.println("Sensor A3 detectou linha preta");
+  } else {
+    Serial.println("Sensor A3 detectou a linha branca");
+  }
+
+  if (sensorValueA4 >= treashold) {
+    Serial.println("Sensor A4 detectou linha preta");
+  } else {
+    Serial.println("Sensor A4 detectou a linha branca");
+  }
+
+  if (sensorValueA5 >= treashold) {
+    Serial.println("Sensor A5 detectou linha preta");
+  } else {
+    Serial.println("Sensor A5 detectou a linha branca");
+  }
+
+  // Controle de movimento baseado nos sensores
+  if (sensorValueA2 >= treashold && sensorValueA3 >= treashold) {
+    // Se os sensores centrais detectarem a linha preta, o robô segue em frente
+    analogWrite(motorREnable, 128);
+    analogWrite(motorLEnable, 128);
+    digitalWrite(motorRPin1, LOW);
+    digitalWrite(motorRPin2, HIGH);
+    digitalWrite(motorLPin1, LOW);
+    digitalWrite(motorLPin2, HIGH);
+  } else if (sensorValueA0 >= treashold || sensorValueA1 >= treashold) {
+    // Se os sensores à esquerda detectarem a linha preta, gira à direita
+    analogWrite(motorREnable, 60);
+    analogWrite(motorLEnable, 60);
+    digitalWrite(motorRPin1, LOW);
+    digitalWrite(motorRPin2, HIGH);
+    digitalWrite(motorLPin1, LOW);
+    digitalWrite(motorLPin2, HIGH);
+  } else if (sensorValueA4 >= treashold || sensorValueA5 >= treashold) {
+    // Se os sensores à direita detectarem a linha preta, gira à esquerda
+    analogWrite(motorREnable, 200);
+    analogWrite(motorLEnable, 255);
+    digitalWrite(motorRPin1, LOW);
+    digitalWrite(motorRPin2, HIGH);
+    digitalWrite(motorLPin1, LOW);
+    digitalWrite(motorLPin2, HIGH);
+  } else {
+    // Caso nenhum sensor detecte a linha preta, o robô para
+    analogWrite(motorREnable, 0);
+    analogWrite(motorLEnable, 0);
+  }
+
+  delay(100);  // Pequeno atraso para evitar leitura muito rápida
+}
