@@ -1,0 +1,135 @@
+// Definição dos pinos dos motores
+const int motorRPin1 = 8;
+const int motorRPin2 = 9;
+const int motorREnable = 10;
+
+const int motorLPin1 = 12;
+const int motorLPin2 = 13;
+const int motorLEnable = 11;
+
+// Definição dos pinos dos sensores (A0 a A7)
+const int sensorA0 = A0; // Sensor frontal esquerdo
+const int sensorA1 = A1; // Sensor frontal central esquerdo
+const int sensorA2 = A2; // Sensor frontal central
+const int sensorA3 = A3; // Sensor frontal central direito
+const int sensorA4 = A4; // Sensor frontal direito
+const int sensorA5 = A5; // Sensor lateral direito
+const int sensorA6 = A6; // Sensor lateral esquerdo
+const int sensorA7 = A7; // Sensor lateral esquerdo
+
+// Valor de threshold para detecção da linha preta
+int threshold = 505;
+
+void setup() {
+  // Configuração dos pinos dos motores
+  pinMode(motorLPin1, OUTPUT);
+  pinMode(motorLPin2, OUTPUT);
+  pinMode(motorLEnable, OUTPUT);
+  pinMode(motorRPin1, OUTPUT);
+  pinMode(motorRPin2, OUTPUT);
+  pinMode(motorREnable, OUTPUT);
+
+  // Configuração dos pinos dos sensores
+  pinMode(sensorA0, INPUT_PULLUP);
+  pinMode(sensorA1, INPUT_PULLUP);
+  pinMode(sensorA2, INPUT_PULLUP);
+  pinMode(sensorA3, INPUT_PULLUP);
+  pinMode(sensorA4, INPUT_PULLUP);
+  pinMode(sensorA5, INPUT_PULLUP);
+  pinMode(sensorA6, INPUT_PULLUP); // Sensor lateral esquerdo
+  pinMode(sensorA7, INPUT_PULLUP); // Sensor lateral direito
+
+  // Inicializa a comunicação serial
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Leitura dos sensores (A0 a A7)
+  int sensorValueA0 = analogRead(sensorA0);
+  int sensorValueA1 = analogRead(sensorA1);
+  int sensorValueA2 = analogRead(sensorA2);
+  int sensorValueA3 = analogRead(sensorA3);
+  int sensorValueA4 = analogRead(sensorA4);
+  int sensorValueA5 = analogRead(sensorA5);
+  int sensorValueA6 = analogRead(sensorA6); // Lateral esquerdo
+  int sensorValueA7 = analogRead(sensorA7); // Lateral direito
+
+  // Imprimir os valores dos sensores
+  Serial.print("A0: "); Serial.print(sensorValueA0);
+  Serial.print(" | A1: "); Serial.print(sensorValueA1);
+  Serial.print(" | A2: "); Serial.print(sensorValueA2);
+  Serial.print(" | A3: "); Serial.print(sensorValueA3);
+  Serial.print(" | A4: "); Serial.print(sensorValueA4);
+  Serial.print(" | A5: "); Serial.print(sensorValueA5);
+  Serial.print(" | A6: "); Serial.print(sensorValueA6);
+  Serial.print(" | A7: "); Serial.println(sensorValueA7);
+
+  // Verificação se todos os sensores estão detectando espaço branco
+  if (sensorValueA0 < threshold && sensorValueA1 < threshold && sensorValueA2 < threshold &&
+      sensorValueA3 < threshold && sensorValueA4 < threshold && sensorValueA5 < threshold &&
+      sensorValueA6 < threshold && sensorValueA7 < threshold) {
+    // Robô deve parar
+    analogWrite(motorREnable, 0);
+    analogWrite(motorLEnable, 0);
+    Serial.println("Todos os sensores estão no branco. Robô parado.");
+    delay(100);
+    return;
+  }
+
+  // Controle de movimento baseado nos sensores centrais e laterais
+  if (sensorValueA2 >= threshold || sensorValueA3 >= threshold) {
+    // Se os sensores centrais detectarem a linha preta, o robô segue em frente
+    analogWrite(motorREnable, 200); // Velocidade do motor direito
+    analogWrite(motorLEnable, 200); // Velocidade do motor esquerdo
+    digitalWrite(motorRPin1, LOW);
+    digitalWrite(motorRPin2, HIGH);
+    digitalWrite(motorLPin1, LOW);
+    digitalWrite(motorLPin2, HIGH);
+  } else if (sensorValueA0 >= threshold || sensorValueA1 >= threshold) {
+    // Se os sensores à esquerda detectarem a linha preta, gira à direita
+    analogWrite(motorREnable, 200); // Motor direito normal
+    analogWrite(motorLEnable, 150); // Motor esquerdo mais lento
+    digitalWrite(motorRPin1, LOW);
+    digitalWrite(motorRPin2, HIGH);
+    digitalWrite(motorLPin1, LOW);
+    digitalWrite(motorLPin2, HIGH);
+  } else if (sensorValueA4 >= threshold || sensorValueA5 >= threshold) {
+    // Se os sensores à direita detectarem a linha preta, gira à esquerda
+    analogWrite(motorREnable, 150); // Motor direito mais lento
+    analogWrite(motorLEnable, 200); // Motor esquerdo normal
+    digitalWrite(motorRPin1, LOW);
+    digitalWrite(motorRPin2, HIGH);
+    digitalWrite(motorLPin1, LOW);
+    digitalWrite(motorLPin2, HIGH);
+  }
+
+  // Controle de curva com sensores laterais
+  if (sensorValueA6 >= threshold) { // Início da curva (sensor lateral esquerdo)
+    Serial.println("Início da curva à esquerda.");
+    analogWrite(motorREnable, 200); // Motor direito normal
+    analogWrite(motorLEnable, 150); // Motor esquerdo mais lento
+    digitalWrite(motorRPin1, LOW);
+    digitalWrite(motorRPin2, HIGH);
+    digitalWrite(motorLPin1, LOW);
+    digitalWrite(motorLPin2, HIGH);
+  } else if (sensorValueA7 >= threshold) { // Fim da curva (sensor lateral direito)
+    Serial.println("Fim da curva à direita.");
+    analogWrite(motorREnable, 150); // Motor direito mais lento
+    analogWrite(motorLEnable, 200); // Motor esquerdo normal
+    digitalWrite(motorRPin1, LOW);
+    digitalWrite(motorRPin2, HIGH);
+    digitalWrite(motorLPin1, LOW);
+    digitalWrite(motorLPin2, HIGH);
+  }
+
+  // Se nenhum sensor detectar linha preta, o robô para
+  if (sensorValueA0 < threshold && sensorValueA1 < threshold && sensorValueA2 < threshold &&
+      sensorValueA3 < threshold && sensorValueA4 < threshold && sensorValueA5 < threshold &&
+      sensorValueA6 < threshold && sensorValueA7 < threshold) {
+    analogWrite(motorREnable, 0);
+    analogWrite(motorLEnable, 0);
+    Serial.println("Nenhum sensor detectou linha preta. Robô parado.");
+  }
+
+  delay(100);  // Pequeno atraso para evitar leitura muito rápida
+}
