@@ -1,0 +1,124 @@
+// Definição dos pinos dos motores
+const int motorRPin1 = 8;
+const int motorRPin2 = 9;
+const int motorREnable = 10;
+
+const int motorLPin1 = 12;
+const int motorLPin2 = 13;
+const int motorLEnable = 11;
+
+// Definição dos pinos dos sensores (A0 a A5)
+const int sensorA0 = A0;
+const int sensorA1 = A1;
+const int sensorA2 = A2;
+const int sensorA3 = A3;
+const int sensorA4 = A4;
+const int sensorA5 = A5;
+
+// Valor de threshold para detecção da linha branca
+int threshold = 505;
+
+// Parâmetros do PID
+float Kp = 0.7;  // Ganho proporcional
+float Ki = 0.15;  // Ganho integral
+float Kd = 0.07; // Ganho derivativo
+
+int lastError = 0;
+int totalError = 0;
+
+void setup() {
+  // Configuração dos pinos dos motores
+  pinMode(motorLPin1, OUTPUT);
+  pinMode(motorLPin2, OUTPUT);
+  pinMode(motorLEnable, OUTPUT);
+  pinMode(motorRPin1, OUTPUT);
+  pinMode(motorRPin2, OUTPUT);
+  pinMode(motorREnable, OUTPUT);
+
+  // Configuração dos pinos dos sensores
+  pinMode(sensorA0, INPUT_PULLUP);
+  pinMode(sensorA1, INPUT_PULLUP);
+  pinMode(sensorA2, INPUT_PULLUP);
+  pinMode(sensorA3, INPUT_PULLUP);
+  pinMode(sensorA4, INPUT_PULLUP);
+  pinMode(sensorA5, INPUT_PULLUP);
+
+  // Inicializa a comunicação serial
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Leitura dos sensores (A0 a A5)
+  int sensorValueA0 = analogRead(sensorA0);
+  int sensorValueA1 = analogRead(sensorA1);
+  int sensorValueA2 = analogRead(sensorA2);
+  int sensorValueA3 = analogRead(sensorA3);
+  int sensorValueA4 = analogRead(sensorA4);
+  int sensorValueA5 = analogRead(sensorA5);
+
+  // Verificação se todos os sensores estão detectando espaço escuro
+  if (sensorValueA0 > threshold && sensorValueA1 > threshold && sensorValueA2 > threshold &&
+      sensorValueA3 > threshold && sensorValueA4 > threshold && sensorValueA5 > threshold) {
+    // Robô deve parar
+    analogWrite(motorREnable, 0);
+    analogWrite(motorLEnable, 0);
+    Serial.println("Todos os sensores estão no escuro. Robô parado.");
+    //delay(100);
+    return;
+  }
+
+  // Calcular posição e erro
+  int position = getLinePosition(sensorValueA0, sensorValueA1, sensorValueA2, sensorValueA3, sensorValueA4, sensorValueA5);
+  int error = position - 0;  // A linha branca deve estar centralizada
+
+  // Controle PID
+  int P = error;
+  totalError += error;
+  int I = totalError;
+  int D = error - lastError;
+  lastError = error;
+
+  // Ajustar a velocidade dos motores
+  int baseSpeed = 150; // Velocidade base
+  int turnSpeed = 30;  // Velocidade reduzida ao virar
+
+  if (error > 0) { // Virar à direita
+    analogWrite(motorREnable, baseSpeed); // Motor direito normal
+    analogWrite(motorLEnable, turnSpeed); // Motor esquerdo lento
+  } else if (error < 0) { // Virar à esquerda
+    analogWrite(motorREnable, turnSpeed); // Motor direito lento
+    analogWrite(motorLEnable, baseSpeed); // Motor esquerdo normal
+  } else { // Seguir em frente
+    analogWrite(motorREnable, baseSpeed);
+    analogWrite(motorLEnable, baseSpeed);
+  }
+
+  digitalWrite(motorRPin1, LOW);
+  digitalWrite(motorRPin2, HIGH);
+  digitalWrite(motorLPin1, LOW);
+  digitalWrite(motorLPin2, HIGH);
+
+ // delay(100);
+}
+
+int getLinePosition(int sensorA0, int sensorA1, int sensorA2, int sensorA3, int sensorA4, int sensorA5) {
+  // Calcular a posição da linha com base nos valores dos sensores
+  int weights[6] = {-3, -2, -1, 1, 2, 3};
+  int sumWeights = 0;
+  int sumValues = 0;
+
+  int sensorValues[6] = {sensorA0, sensorA1, sensorA2, sensorA3, sensorA4, sensorA5};
+
+  for (int i = 0; i < 6; i++) {
+    if (sensorValues[i] < threshold) {  // Linha branca
+      sumWeights += weights[i];
+      sumValues += 1;
+    }
+  }
+
+  if (sumValues == 0) {
+    return 0;  // Nenhum sensor detectou a linha
+  } else {
+    return sumWeights / sumValues;  // Posição da linha
+  }
+}
